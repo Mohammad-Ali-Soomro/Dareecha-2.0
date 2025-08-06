@@ -7,7 +7,7 @@ A comprehensive book sharing platform designed for GIKI University students, ena
 ### 🔐 Authentication & Security
 - JWT-based authentication system
 - Microsoft OAuth integration for university accounts
-- Secure password hashing with bcrypt
+- Secure password hashing with bcryptjs
 - Rate limiting and security headers
 - Session management
 
@@ -119,6 +119,39 @@ giki-virtual-library/
 3. Commit your changes (`git commit -m 'Add amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
+
+## Troubleshooting
+
+### NPM Installation Error: "file argument must be of type string"
+
+If you encounter the error `npm error code ERR_INVALID_ARG_TYPE` with message "The 'file' argument must be of type string. Received undefined", this is typically caused by the `bcrypt` package requiring native compilation.
+
+**Solution Applied:**
+- Replaced `bcrypt` with `bcryptjs` (pure JavaScript implementation)
+- Updated all dependencies to latest compatible versions
+- Cleared npm cache and reinstalled dependencies
+
+**If you still encounter issues:**
+1. Clear npm cache: `npm cache clean --force`
+2. Delete `node_modules` and `package-lock.json`
+3. Run `npm install` again
+4. Ensure you have the latest Node.js version (16.0.0 or higher)
+
+### Database Connection Issues
+
+If you see database connection errors:
+1. Ensure PostgreSQL is installed and running
+2. Update database credentials in `.env` file
+3. Create the database: `createdb giki_library`
+4. Run database setup: `npm run setup-db`
+
+### Microsoft OAuth Setup
+
+For authentication to work:
+1. Register your app at [Azure Portal](https://portal.azure.com/)
+2. Get Client ID and Client Secret
+3. Update `.env` file with your OAuth credentials
+4. Set redirect URI to `http://localhost:3000/auth/microsoft/callback`
 
 ## License
 
