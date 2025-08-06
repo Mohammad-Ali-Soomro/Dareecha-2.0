@@ -4,9 +4,9 @@
   "description": "GIKI University Virtual Library - Complete book sharing platform with authentication and database",
   "main": "server-database.js",
   "scripts": {
-    "start": "node server-database.js",
-    "dev": "nodemon server-database.js",
-    "setup-db": "node setup-database.js",
+    "start": "node server-simple.js",
+    "dev": "nodemon server-simple.js",
+    "database": "node server-database.js",
     "legacy": "node server.js",
     "test": "echo \"No tests specified yet\" && exit 0"
   },
@@ -16,15 +16,14 @@
     "cors": "^2.8.5",
     "bcryptjs": "^2.4.3",
     "jsonwebtoken": "^9.0.2",
-    "pg": "^8.16.3",
+    "lowdb": "^7.0.1",
     "express-session": "^1.18.2",
     "passport": "^0.7.0",
     "passport-microsoft": "^1.1.0",
     "dotenv": "^16.6.1",
     "express-rate-limit": "^7.5.1",
     "helmet": "^7.2.0",
-    "morgan": "^1.10.1",
-    "mongoose": "^7.8.7"
+    "morgan": "^1.10.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"

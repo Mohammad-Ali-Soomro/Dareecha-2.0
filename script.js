@@ -293,26 +293,32 @@ async function login() {
     const username = document.getElementById('loginUsername').value.trim();
     const password = document.getElementById('loginPassword').value.trim();
 
+    if (!username || !password) {
+        alert('Please enter both username and password');
+        return;
+    }
+
     try {
-        const response = await fetch('/api/auth/login', {
+        const response = await fetch('/api/login', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ username, password })
+            body: JSON.stringify({ email: username, password })
         });
 
         const data = await response.json();
-        if (data.success) {
+        if (response.ok && data.token) {
             currentUser = data.user;
             localStorage.setItem('currentUser', JSON.stringify(data.user));
-            
+            localStorage.setItem('authToken', data.token);
+
             // Initialize socket connection after login
             initializeSocket();
-            
+
             // Load books from server
             await loadBooks();
-            
+
             updateNavigation();
             showPage('feed');
         } else {
@@ -345,16 +351,20 @@ async function addBook() {
     }
 
     try {
+        const token = localStorage.getItem('authToken');
         const response = await fetch('/api/books', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({ title, author, genre, description, condition, owner: currentUser.username })
+            body: JSON.stringify({ title, author, category: genre, description, condition })
         });
 
         const data = await response.json();
-        if (data.success) {
+        if (response.ok) {
+            await loadBooks();
+            renderBooks();
             showPage('feed');
             clearBookForm();
         } else {

@@ -1,0 +1,28 @@
+{
+  "users": [
+    {
+      "id": 1754509631315,
+      "email": "demo@giki.edu.pk",
+      "name": "demo",
+      "password": "$2a$10$JovWEHtDgK4Mv5T6AbG6LuNFiWfV4rIHewxRJdBC9vT129nh0j522",
+      "registrationNumber": "DEMO-1754509631315",
+      "department": "Computer Science",
+      "createdAt": "2025-08-06T19:47:11.315Z"
+    }
+  ],
+  "books": [
+    {
+      "id": 1754509647180,
+      "title": "Maybe in another life.",
+      "author": " Bertrand Russell",
+      "description": "dnaskjdnksadsahd",
+      "category": "General",
+      "condition": "Good",
+      "ownerId": 1754509631315,
+      "isAvailable": true,
+      "createdAt": "2025-08-06T19:47:27.180Z"
+    }
+  ],
+  "borrowRequests": [],
+  "notifications": []
+}

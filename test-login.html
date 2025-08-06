@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Login - GIKI Virtual Library</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .demo-info {
+            background-color: #e7f3ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #3498db;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Test GIKI Virtual Library</h1>
+        
+        <div class="demo-info">
+            <h3>Demo Credentials:</h3>
+            <p><strong>Email:</strong> demo@giki.edu.pk</p>
+            <p><strong>Password:</strong> demo123</p>
+            <p><em>Or use any email/password - new accounts will be created automatically!</em></p>
+        </div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" value="demo@giki.edu.pk" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" value="demo123" required>
+            </div>
+            
+            <button type="submit">Login / Register</button>
+        </form>
+
+        <div id="result" class="result"></div>
+
+        <div id="bookSection" style="display: none; margin-top: 30px;">
+            <h3>Add a Book</h3>
+            <form id="bookForm">
+                <div class="form-group">
+                    <label for="title">Title:</label>
+                    <input type="text" id="title" required>
+                </div>
+                <div class="form-group">
+                    <label for="author">Author:</label>
+                    <input type="text" id="author" required>
+                </div>
+                <div class="form-group">
+                    <label for="description">Description:</label>
+                    <input type="text" id="description">
+                </div>
+                <button type="submit">Add Book</button>
+            </form>
+        </div>
+
+        <div id="booksSection" style="display: none; margin-top: 30px;">
+            <h3>Available Books</h3>
+            <div id="booksList"></div>
+        </div>
+    </div>
+
+    <script>
+        let authToken = null;
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.token) {
+                    authToken = data.token;
+                    resultDiv.className = 'result success';
+                    resultDiv.style.display = 'block';
+                    resultDiv.innerHTML = `
+                        <h4>✅ Login Successful!</h4>
+                        <p><strong>Name:</strong> ${data.user.name}</p>
+                        <p><strong>Email:</strong> ${data.user.email}</p>
+                        <p><strong>ID:</strong> ${data.user.id}</p>
+                    `;
+                    
+                    document.getElementById('bookSection').style.display = 'block';
+                    document.getElementById('booksSection').style.display = 'block';
+                    loadBooks();
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.style.display = 'block';
+                    resultDiv.innerHTML = `<h4>❌ Login Failed</h4><p>${data.error}</p>`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = `<h4>❌ Error</h4><p>${error.message}</p>`;
+            }
+        });
+
+        document.getElementById('bookForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!authToken) {
+                alert('Please login first');
+                return;
+            }
+            
+            const title = document.getElementById('title').value;
+            const author = document.getElementById('author').value;
+            const description = document.getElementById('description').value;
+            
+            try {
+                const response = await fetch('/api/books', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ title, author, description })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert('Book added successfully!');
+                    document.getElementById('bookForm').reset();
+                    loadBooks();
+                } else {
+                    alert('Failed to add book: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        });
+
+        async function loadBooks() {
+            try {
+                const response = await fetch('/api/books');
+                const books = await response.json();
+                
+                const booksList = document.getElementById('booksList');
+                if (books.length === 0) {
+                    booksList.innerHTML = '<p>No books available yet. Add some books!</p>';
+                } else {
+                    booksList.innerHTML = books.map(book => `
+                        <div style="border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px;">
+                            <h4>${book.title}</h4>
+                            <p><strong>Author:</strong> ${book.author}</p>
+                            <p><strong>Description:</strong> ${book.description || 'No description'}</p>
+                            <p><strong>Owner:</strong> ${book.ownerName}</p>
+                            <p><strong>Available:</strong> ${book.isAvailable ? '✅ Yes' : '❌ No'}</p>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error loading books:', error);
+            }
+        }
+    </script>
+</body>
+</html>
