@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GIKI Virtual Library</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Amiri&family=Cormorant+Garamond&family=Reem+Kufi&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <h1>📚 GIKI Virtual Library</h1>
+        <div class="nav-links" id="navLinks"></div>
+        <div class="auth-buttons" id="authButtons"></div>
+    </nav>
+
+    <!-- Auth Section -->
+    <div id="authSection" class="container">
+        <div class="auth-container">
+            <div class="auth-form" id="loginForm">
+                <h2>Student Sign In</h2>
+                <input type="text" id="loginUsername" placeholder="Student ID or Username">
+                <input type="password" id="loginPassword" placeholder="Password">
+                <button onclick="login()">Enter Library</button>
+                <p>New GIKI student? <a href="#" onclick="showRegister()">Register Account</a></p>
+            </div>
+
+            <div class="auth-form" id="registerForm" style="display: none;">
+                <h2>Student Registration</h2>
+                <input type="text" id="registerUsername" placeholder="Student ID or Username">
+                <input type="text" id="registerEmail" placeholder="GIKI Email (optional)">
+                <input type="password" id="registerPassword" placeholder="Password">
+                <button onclick="register()">Register as Student</button>
+                <p>Already registered? <a href="#" onclick="showLogin()">Sign In</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feed Section -->
+    <div id="feedSection" class="container" style="display: none;">
+        <div class="feed-header">
+            <div class="search-container">
+                <input type="text" id="searchInput" placeholder="Search books by title, author, or genre...">
+                <button onclick="searchBooks()"><i class="fas fa-search"></i></button>
+            </div>
+            <div class="library-actions">
+                <button class="new-post-btn" onclick="showPage('addBook')">+ Add Book</button>
+                <button class="view-borrowed-btn" onclick="showPage('myBooks')">My Borrowed Books</button>
+            </div>
+        </div>
+        <div id="booksContainer" class="books-container"></div>
+    </div>
+
+    <!-- Add Book Section -->
+    <div id="addBookSection" class="container" style="display: none;">
+        <div class="book-form">
+            <h2>📖 Add New Book to Library</h2>
+            <input type="text" id="bookTitle" placeholder="Book Title">
+            <input type="text" id="bookAuthor" placeholder="Author Name">
+            <input type="text" id="bookGenre" placeholder="Genre (e.g., Fiction, Science, History)">
+            <input type="text" id="bookISBN" placeholder="ISBN (optional)">
+            <textarea id="bookDescription" placeholder="Brief description of the book (optional)"></textarea>
+            <div class="book-condition">
+                <label>Book Condition:</label>
+                <select id="bookCondition">
+                    <option value="excellent">Excellent</option>
+                    <option value="good">Good</option>
+                    <option value="fair">Fair</option>
+                </select>
+            </div>
+            <button onclick="addBook()">Add to Library</button>
+            <button class="cancel-btn" onclick="showPage('feed')">Cancel</button>
+        </div>
+    </div>
+
+    <!-- My Books Section -->
+    <div id="myBooksSection" class="container" style="display: none;">
+        <h2>📚 My Library Activities</h2>
+        <div class="tabs">
+            <button class="tab-btn active" onclick="showTab('borrowed')">Books I've Borrowed</button>
+            <button class="tab-btn" onclick="showTab('lent')">Books I've Added</button>
+        </div>
+        <div id="borrowedBooks" class="books-container"></div>
+        <div id="lentBooks" class="books-container" style="display: none;"></div>
+    </div>
+
+    <!-- Profile Section -->
+    <div id="profileSection" class="container" style="display: none;">
+        <div id="profileHeader" class="profile-header"></div>
+        <div class="profile-stats">
+            <div class="stat-card">
+                <h3>Books Added</h3>
+                <span id="booksAdded">0</span>
+            </div>
+            <div class="stat-card">
+                <h3>Books Borrowed</h3>
+                <span id="booksBorrowed">0</span>
+            </div>
+            <div class="stat-card">
+                <h3>Books Returned</h3>
+                <span id="booksReturned">0</span>
+            </div>
+        </div>
+    <div id="userBooks" class="books-container"></div>
+    </div>
+
+    <!-- Borrow Request Modal -->
+    <div id="borrowModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📖 Request to Borrow Book</h3>
+                <button class="close-modal" onclick="closeBorrowModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="borrowBookInfo" class="book-info-modal"></div>
+                <div class="borrow-form">
+                    <label for="borrowPeriod">Borrow Period:</label>
+                    <select id="borrowPeriod">
+                        <option value="7">1 Week (7 days)</option>
+                        <option value="14" selected>2 Weeks (14 days)</option>
+                        <option value="21">3 Weeks (21 days)</option>
+                        <option value="30">1 Month (30 days)</option>
+                        <option value="custom">Custom Period</option>
+                    </select>
+                    
+                    <div id="customPeriodDiv" style="display: none; margin-top: 1rem;">
+                        <label for="customDays">Custom Days (Max 30):</label>
+                        <input type="number" id="customDays" min="1" max="30" placeholder="Enter days">
+                    </div>
+                    
+                    <label for="borrowMessage">Message to Owner (Optional):</label>
+                    <textarea id="borrowMessage" placeholder="Let the owner know why you need this book or any special requests..."></textarea>
+                    
+                    <div class="due-date-info">
+                        <strong>Expected Return Date: <span id="expectedReturnDate"></span></strong>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="cancel-btn" onclick="closeBorrowModal()">Cancel</button>
+                <button class="borrow-btn" onclick="submitBorrowRequest()">Send Request</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Approval Notifications Panel -->
+    <div id="approvalPanel" class="approval-panel" style="display: none;">
+        <div class="approval-header">
+            <h3>📋 Pending Approval Requests</h3>
+            <button class="close-panel" onclick="closeApprovalPanel()">&times;</button>
+        </div>
+        <div id="approvalRequests" class="approval-requests"></div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GIKI Virtual Library - Where Knowledge Lives</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=VT323:wght@400&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="landing-styles.css">
+</head>
+<body>
+    <!-- Floating particles background -->
+    <div id="particles-js"></div>
+    
+    <!-- Main landing page -->
+    <div class="landing-container">
+        <!-- Header -->
+        <header class="landing-header">
+            <nav class="landing-nav">
+                <div class="logo">
+                    <span class="logo-icon">📚</span>
+                    <span class="logo-text">GIKI Virtual Library</span>
+                </div>
+                <div class="nav-links">
+                    <a href="#about">About</a>
+                    <a href="#features">Features</a>
+                    <a href="#contact">Contact</a>
+                    <button class="cta-btn" onclick="window.location.href='/auth/microsoft'">Sign In with GIKI</button>
+                </div>
+            </nav>
+        </header>
+
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="hero-content">
+                <div class="hero-left">
+                    <h1 class="hero-title">
+                        <span class="title-line">Where</span>
+                        <span class="title-line highlight">Knowledge</span>
+                        <span class="title-line">Lives</span>
+                    </h1>
+                    <p class="hero-subtitle">
+                        A revolutionary virtual library connecting GIKI students through the timeless art of book sharing. 
+                        Discover, borrow, and exchange knowledge in our digital literary oasis.
+                    </p>
+                    <div class="hero-actions">
+                        <button class="primary-btn" onclick="window.location.href='/auth/microsoft'">
+                            <i class="fas fa-key"></i>
+                            Sign In with GIKI Account
+                        </button>
+                        <button class="secondary-btn" onclick="scrollToFeatures()">
+                            <i class="fas fa-compass"></i>
+                            Learn More
+                        </button>
+                    </div>
+                    <div class="hero-stats">
+                        <div class="stat">
+                            <span class="stat-number" data-target="1250">0</span>
+                            <span class="stat-label">Books Available</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-number" data-target="450">0</span>
+                            <span class="stat-label">Active Students</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-number" data-target="2100">0</span>
+                            <span class="stat-label">Books Borrowed</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="hero-right">
+                    <div class="book-stack">
+                        <div class="book book-1" data-title="The Art of War">
+                            <div class="book-spine">Sun Tzu</div>
+                        </div>
+                        <div class="book book-2" data-title="1984">
+                            <div class="book-spine">George Orwell</div>
+                        </div>
+                        <div class="book book-3" data-title="Sapiens">
+                            <div class="book-spine">Yuval Noah Harari</div>
+                        </div>
+                        <div class="book book-4" data-title="Clean Code">
+                            <div class="book-spine">Robert C. Martin</div>
+                        </div>
+                        <div class="floating-pages">
+                            <div class="page page-1">📄</div>
+                            <div class="page page-2">📃</div>
+                            <div class="page page-3">📜</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="scroll-indicator">
+                <i class="fas fa-chevron-down"></i>
+            </div>
+        </section>
+
+        <!-- About Section -->
+        <section id="about" class="about-section">
+            <div class="container">
+                <div class="section-header">
+                    <h2>About Our Digital Literary Haven</h2>
+                    <p>Bridging the gap between knowledge seekers and knowledge holders</p>
+                </div>
+                <div class="about-content">
+                    <div class="about-text">
+                        <p class="elegant-text">
+                            In the hallowed halls of academia, where wisdom flows like ancient rivers, 
+                            we have created a sanctuary for the exchange of knowledge. Our virtual library 
+                            transcends physical boundaries, connecting GIKI students through the shared 
+                            passion for learning and literary exploration.
+                        </p>
+                        <p class="elegant-text">
+                            Here, every book finds its perfect reader, and every reader discovers their 
+                            next great adventure. Join our community of scholars, thinkers, and dreamers 
+                            as we build the future of academic collaboration.
+                        </p>
+                    </div>
+                    <div class="about-visual">
+                        <div class="quote-carousel">
+                            <div class="quote active">
+                                <p>"A reader lives a thousand lives before he dies..."</p>
+                                <cite>— George R.R. Martin</cite>
+                            </div>
+                            <div class="quote">
+                                <p>"The more that you read, the more things you will know..."</p>
+                                <cite>— Dr. Seuss</cite>
+                            </div>
+                            <div class="quote">
+                                <p>"A room without books is like a body without a soul..."</p>
+                                <cite>— Cicero</cite>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section id="features" class="features-section">
+            <div class="container">
+                <div class="section-header">
+                    <h2>Library Features</h2>
+                    <p>Everything you need for seamless book sharing</p>
+                </div>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-book-reader"></i>
+                        </div>
+                        <h3>Smart Book Discovery</h3>
+                        <p>Advanced search and recommendation system to find your next perfect read</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-handshake"></i>
+                        </div>
+                        <h3>Peer-to-Peer Lending</h3>
+                        <p>Direct book sharing between students with approval-based borrowing system</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-bell"></i>
+                        </div>
+                        <h3>Real-time Notifications</h3>
+                        <p>Instant updates on borrowing requests, approvals, and return reminders</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <h3>Smart Due Dates</h3>
+                        <p>Flexible borrowing periods with automatic reminder system</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <h3>GIKI Authenticated</h3>
+                        <p>Secure access exclusively for verified GIKI university students</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <h3>Reading Analytics</h3>
+                        <p>Track your reading journey and contribution to the community</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="cta-section">
+            <div class="container">
+                <div class="cta-content">
+                    <h2>Ready to Begin Your Literary Journey?</h2>
+                    <p>Join thousands of GIKI students in our thriving knowledge-sharing community</p>
+                    <button class="cta-primary" onclick="window.location.href='/auth/microsoft'">
+                        <i class="fas fa-rocket"></i>
+                        Get Started Now
+                    </button>
+                </div>
+                <div class="cta-decoration">
+                    <div class="floating-book">📚</div>
+                    <div class="floating-book">📖</div>
+                    <div class="floating-book">📓</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="landing-footer">
+            <div class="container">
+                <div class="footer-content">
+                    <div class="footer-left">
+                        <div class="footer-logo">
+                            <span class="logo-icon">📚</span>
+                            <span class="logo-text">GIKI Virtual Library</span>
+                        </div>
+                        <p>Connecting minds through the power of shared knowledge</p>
+                    </div>
+                    <div class="footer-right">
+                        <div class="footer-links">
+                            <a href="#about">About</a>
+                            <a href="#features">Features</a>
+                            <a href="#contact">Contact</a>
+                            <a href="#">Privacy</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="footer-bottom">
+                    <p>&copy; 2025 GIKI Virtual Library. Made with ❤️ for the GIKI community.</p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script src="landing-script.js"></script>
+</body>
+</html>
