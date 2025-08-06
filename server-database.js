@@ -4,7 +4,6 @@ const socketIo = require('socket.io');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { Pool } = require('pg');
 const session = require('express-session');
 const passport = require('passport');
 const MicrosoftStrategy = require('passport-microsoft').Strategy;
@@ -20,14 +19,51 @@ const io = socketIo(server, {
     }
 });
 
-// Database Configuration
-const pool = new Pool({
-    user: process.env.DB_USER || 'postgres',
-    host: process.env.DB_HOST || 'localhost',
-    database: process.env.DB_NAME || 'giki_library',
-    password: process.env.DB_PASSWORD || 'password',
-    port: process.env.DB_PORT || 5432,
-});
+// Database Configuration with fallback
+let pool;
+let useInMemoryDB = false;
+
+async function initializeDatabaseConnection() {
+    try {
+        const { Pool } = require('pg');
+        pool = new Pool({
+            user: process.env.DB_USER || 'postgres',
+            host: process.env.DB_HOST || 'localhost',
+            database: process.env.DB_NAME || 'giki_library',
+            password: process.env.DB_PASSWORD || 'password',
+            port: process.env.DB_PORT || 5432,
+        });
+        
+        // Test the connection
+        try {
+            await pool.query('SELECT NOW()');
+            console.log('✅ PostgreSQL connected successfully');
+        } catch (err) {
+            console.log('⚠️  PostgreSQL connection failed, using in-memory database for development');
+            console.log('   To use PostgreSQL, please:');
+            console.log('   1. Install PostgreSQL');
+            console.log('   2. Create a database named "giki_library"');
+            console.log('   3. Set up environment variables in .env file');
+            console.log('   4. Run: npm run setup-db');
+            useInMemoryDB = true;
+        }
+    } catch (error) {
+        console.log('⚠️  PostgreSQL not available, using in-memory database for development');
+        useInMemoryDB = true;
+    }
+}
+
+// In-memory database for development
+const inMemoryDB = {
+    users: [],
+    books: [],
+    borrowRequests: [],
+    notifications: [],
+    nextUserId: 1,
+    nextBookId: 1,
+    nextRequestId: 1,
+    nextNotificationId: 1
+};
 
 // Middleware
 app.use(cors());
@@ -48,8 +84,8 @@ app.use(passport.session());
 
 // Microsoft Outlook OAuth Strategy
 passport.use(new MicrosoftStrategy({
-    clientID: process.env.MICROSOFT_CLIENT_ID,
-    clientSecret: process.env.MICROSOFT_CLIENT_SECRET,
+    clientID: process.env.MICROSOFT_CLIENT_ID || 'demo-client-id',
+    clientSecret: process.env.MICROSOFT_CLIENT_SECRET || 'demo-client-secret',
     callbackURL: process.env.MICROSOFT_CALLBACK_URL || 'http://localhost:3000/auth/microsoft/callback',
     scope: ['user.read']
 }, async (accessToken, refreshToken, profile, done) => {
@@ -61,31 +97,59 @@ passport.use(new MicrosoftStrategy({
             return done(null, false, { message: 'Only GIKI students and staff are allowed' });
         }
 
-        // Check if user exists
-        let user = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-        
-        if (user.rows.length === 0) {
-            // Create new user
-            const newUser = await pool.query(
-                'INSERT INTO users (email, name, profile_picture, registration_number, department) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-                [
-                    email,
-                    profile.displayName,
-                    profile.photos[0]?.value || null,
-                    extractRegistrationNumber(email),
-                    extractDepartment(email)
-                ]
-            );
-            user = newUser;
+        if (useInMemoryDB) {
+            // In-memory database logic
+            let user = inMemoryDB.users.find(u => u.email === email);
+            
+            if (!user) {
+                // Create new user
+                user = {
+                    id: inMemoryDB.nextUserId++,
+                    email: email,
+                    name: profile.displayName,
+                    profile_picture: profile.photos[0]?.value || null,
+                    registration_number: extractRegistrationNumber(email),
+                    department: extractDepartment(email),
+                    created_at: new Date(),
+                    last_login: new Date(),
+                    is_active: true
+                };
+                inMemoryDB.users.push(user);
+            } else {
+                // Update existing user info
+                user.name = profile.displayName;
+                user.profile_picture = profile.photos[0]?.value || null;
+                user.last_login = new Date();
+            }
+            
+            return done(null, user);
         } else {
-            // Update existing user info
-            await pool.query(
-                'UPDATE users SET name = $1, profile_picture = $2, last_login = CURRENT_TIMESTAMP WHERE email = $3',
-                [profile.displayName, profile.photos[0]?.value || null, email]
-            );
+            // PostgreSQL logic
+            let user = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+            
+            if (user.rows.length === 0) {
+                // Create new user
+                const newUser = await pool.query(
+                    'INSERT INTO users (email, name, profile_picture, registration_number, department) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+                    [
+                        email,
+                        profile.displayName,
+                        profile.photos[0]?.value || null,
+                        extractRegistrationNumber(email),
+                        extractDepartment(email)
+                    ]
+                );
+                user = newUser;
+            } else {
+                // Update existing user info
+                await pool.query(
+                    'UPDATE users SET name = $1, profile_picture = $2, last_login = CURRENT_TIMESTAMP WHERE email = $3',
+                    [profile.displayName, profile.photos[0]?.value || null, email]
+                );
+            }
+            
+            return done(null, user.rows[0]);
         }
-        
-        return done(null, user.rows[0]);
     } catch (error) {
         console.error('Authentication error:', error);
         return done(error, null);
@@ -98,8 +162,13 @@ passport.serializeUser((user, done) => {
 
 passport.deserializeUser(async (id, done) => {
     try {
-        const user = await pool.query('SELECT * FROM users WHERE id = $1', [id]);
-        done(null, user.rows[0]);
+        if (useInMemoryDB) {
+            const user = inMemoryDB.users.find(u => u.id === parseInt(id));
+            done(null, user);
+        } else {
+            const user = await pool.query('SELECT * FROM users WHERE id = $1', [id]);
+            done(null, user.rows[0]);
+        }
     } catch (error) {
         done(error, null);
     }
@@ -143,6 +212,44 @@ const authenticateUser = (req, res, next) => {
 // Database initialization
 async function initializeDatabase() {
     try {
+        if (useInMemoryDB) {
+            console.log('📝 Initializing in-memory database for development...');
+            // Add some sample data for development
+            inMemoryDB.users.push({
+                id: 1,
+                email: 'demo@giki.edu.pk',
+                name: 'Demo User',
+                profile_picture: null,
+                registration_number: '2020-CS-001',
+                department: 'Computer Science',
+                created_at: new Date(),
+                last_login: new Date(),
+                is_active: true
+            });
+            
+            inMemoryDB.books.push({
+                id: 1,
+                title: 'Introduction to Computer Science',
+                author: 'John Doe',
+                description: 'A comprehensive guide to computer science fundamentals',
+                category: 'Computer Science',
+                condition: 'Good',
+                owner_id: 1,
+                is_available: true,
+                borrower_id: null,
+                borrowed_date: null,
+                due_date: null,
+                return_date: null,
+                borrow_period_days: null,
+                created_at: new Date(),
+                updated_at: new Date()
+            });
+            
+            console.log('✅ In-memory database initialized with sample data');
+            return;
+        }
+
+        // PostgreSQL initialization
         // Create users table
         await pool.query(`
             CREATE TABLE IF NOT EXISTS users (
@@ -217,9 +324,14 @@ async function initializeDatabase() {
         await pool.query('CREATE INDEX IF NOT EXISTS idx_borrow_requests_status ON borrow_requests(status)');
         await pool.query('CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id, is_read)');
 
-        console.log('Database initialized successfully');
+        console.log('✅ PostgreSQL database initialized successfully');
     } catch (error) {
-        console.error('Database initialization error:', error);
+        console.error('❌ Database initialization error:', error);
+        if (!useInMemoryDB) {
+            console.log('🔄 Falling back to in-memory database...');
+            useInMemoryDB = true;
+            await initializeDatabase(); // Recursive call with in-memory mode
+        }
     }
 }
 
@@ -241,6 +353,26 @@ app.get('/auth/microsoft/callback',
         res.redirect('/dashboard');
     }
 );
+
+// Demo login for development (when Microsoft OAuth is not configured)
+app.get('/auth/demo', (req, res) => {
+    if (useInMemoryDB) {
+        // Create a demo user session
+        const demoUser = inMemoryDB.users.find(u => u.email === 'demo@giki.edu.pk');
+        if (demoUser) {
+            req.login(demoUser, (err) => {
+                if (err) {
+                    return res.redirect('/login-failed');
+                }
+                res.redirect('/dashboard');
+            });
+        } else {
+            res.redirect('/login-failed');
+        }
+    } else {
+        res.redirect('/auth/microsoft');
+    }
+});
 
 app.get('/login-failed', (req, res) => {
     res.send(`
@@ -287,15 +419,30 @@ app.get('/api/user', authenticateUser, (req, res) => {
 // Get all available books (excluding user's own books)
 app.get('/api/books', authenticateUser, async (req, res) => {
     try {
-        const result = await pool.query(`
-            SELECT b.*, u.name as owner_name, u.email as owner_email, u.registration_number as owner_reg_no
-            FROM books b
-            JOIN users u ON b.owner_id = u.id
-            WHERE b.owner_id != $1 AND b.is_available = true
-            ORDER BY b.created_at DESC
-        `, [req.user.id]);
-        
-        res.json(result.rows);
+        if (useInMemoryDB) {
+            const books = inMemoryDB.books.filter(book => 
+                book.owner_id !== req.user.id && book.is_available
+            ).map(book => {
+                const owner = inMemoryDB.users.find(u => u.id === book.owner_id);
+                return {
+                    ...book,
+                    owner_name: owner ? owner.name : 'Unknown',
+                    owner_email: owner ? owner.email : 'unknown@giki.edu.pk',
+                    owner_reg_no: owner ? owner.registration_number : 'Unknown'
+                };
+            });
+            res.json(books);
+        } else {
+            const result = await pool.query(`
+                SELECT b.*, u.name as owner_name, u.email as owner_email, u.registration_number as owner_reg_no
+                FROM books b
+                JOIN users u ON b.owner_id = u.id
+                WHERE b.owner_id != $1 AND b.is_available = true
+                ORDER BY b.created_at DESC
+            `, [req.user.id]);
+            
+            res.json(result.rows);
+        }
     } catch (error) {
         console.error('Error fetching books:', error);
         res.status(500).json({ error: 'Failed to fetch books' });
@@ -773,15 +920,31 @@ setInterval(async () => {
 // Initialize database and start server
 const PORT = process.env.PORT || 3000;
 
-initializeDatabase().then(() => {
-    server.listen(PORT, () => {
-        console.log(`GIKI Virtual Library Server running on port ${PORT}`);
-        console.log(`Landing Page: http://localhost:${PORT}`);
-        console.log(`Dashboard: http://localhost:${PORT}/dashboard`);
-    });
-}).catch(error => {
-    console.error('Failed to initialize database:', error);
-    process.exit(1);
-});
+async function startServer() {
+    try {
+        await initializeDatabaseConnection();
+        await initializeDatabase();
+        
+        server.listen(PORT, () => {
+            console.log('🚀 GIKI Virtual Library Server is running!');
+            console.log(`📍 Port: ${PORT}`);
+            console.log(`🌐 Landing Page: http://localhost:${PORT}`);
+            console.log(`📚 Dashboard: http://localhost:${PORT}/dashboard`);
+            console.log(`🔑 Demo Login: http://localhost:${PORT}/auth/demo`);
+            
+            if (useInMemoryDB) {
+                console.log('💡 Using in-memory database for development');
+                console.log('   To use PostgreSQL, set up your database and environment variables');
+            } else {
+                console.log('✅ Connected to PostgreSQL database');
+            }
+        });
+    } catch (error) {
+        console.error('❌ Failed to start server:', error);
+        process.exit(1);
+    }
+}
+
+startServer();
 
 module.exports = { app, server, io, pool };
