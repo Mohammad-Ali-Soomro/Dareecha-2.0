@@ -39,7 +39,12 @@ function initializeSocket() {
     socket.on('connect', () => {
         console.log('Connected to server');
         if (currentUser) {
-            socket.emit('user_connected', currentUser.username);
+            // Register this socket with the backend using the authenticated user id
+            if (currentUser.id) {
+                socket.emit('register_user', currentUser.id);
+            }
+            // Backward-compatible event
+            socket.emit('user_connected', currentUser.username || currentUser.name || currentUser.email);
         }
     });
     
@@ -352,12 +357,12 @@ async function addBook() {
 
     try {
         const token = localStorage.getItem('authToken');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`; // optional, server uses session
+
         const response = await fetch('/api/books', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
+            headers,
             body: JSON.stringify({ title, author, category: genre, description, condition })
         });
 
@@ -685,47 +690,71 @@ function updateNavigation() {
     const authButtons = document.getElementById('authButtons');
     
     if (currentUser) {
+        const displayName = currentUser.username || currentUser.name || currentUser.email;
         navLinks.innerHTML = `
             <a href="#" onclick="showPage('feed')">Library Home</a>
             <a href="#" onclick="showPage('myBooks')">My Books</a>
-            <a href="#" onclick="showPage('profile', '${currentUser.username}')">My Profile</a>
+            <a href="#" onclick="showPage('profile', '${displayName}')">My Profile</a>
         `;
         authButtons.innerHTML = `
-            <span>Welcome, ${currentUser.username}</span>
+            <span>Welcome, ${displayName}</span>
             <button onclick="logout()">Logout</button>
         `;
     } else {
         navLinks.innerHTML = '';
-        authButtons.innerHTML = `<button onclick="showPage('auth')">Student Login</button>`;
+        authButtons.innerHTML = `<a href="/auth/microsoft"><button>Sign in with Microsoft</button></a>`;
     }
 }
 
 function logout() {
     currentUser = null;
     localStorage.removeItem('currentUser');
-    updateNavigation();
-    showPage('auth');
-}
-
-function clearBookForm() {
-    document.getElementById('bookTitle').value = '';
-    document.getElementById('bookAuthor').value = '';
-    document.getElementById('bookGenre').value = '';
-    document.getElementById('bookDescription').value = '';
-    document.getElementById('bookISBN').value = '';
+    localStorage.removeItem('authToken');
+    fetch('/api/logout', { method: 'POST' }).finally(() => {
+        updateNavigation();
+        window.location.href = '/';
+    });
 }
 
 // Initialize
 function init() {
-    const savedUser = localStorage.getItem('currentUser');
-    if (savedUser) {
-        currentUser = JSON.parse(savedUser);
-        initializeSocket();
-        updateNavigation();
-        showPage('feed');
-    } else {
-        showPage('auth');
-    }
+    // Prefer server session via OAuth
+    fetch('/api/me')
+        .then(r => r.ok ? r.json() : null)
+        .then(me => {
+            if (me && me.email) {
+                currentUser = me;
+                // Normalize for existing code paths
+                if (!currentUser.username) currentUser.username = currentUser.name || currentUser.email;
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                initializeSocket();
+                updateNavigation();
+                showPage('feed');
+                return;
+            }
+            // Fallback to previous local storage behavior (dev/offline)
+            const savedUser = localStorage.getItem('currentUser');
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                initializeSocket();
+                updateNavigation();
+                showPage('feed');
+            } else {
+                // If not authenticated, send user to landing page for OAuth
+                window.location.href = '/';
+            }
+        })
+        .catch(() => {
+            const savedUser = localStorage.getItem('currentUser');
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                initializeSocket();
+                updateNavigation();
+                showPage('feed');
+            } else {
+                window.location.href = '/';
+            }
+        });
 }
 
 init();

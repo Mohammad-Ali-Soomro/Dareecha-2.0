@@ -26,10 +26,10 @@ html {
 }
 
 body {
-    font-family: var(--baskerville);
+    font-family: 'VT323', monospace;
     line-height: 1.6;
-    color: var(--dark-text);
-    background: linear-gradient(135deg, var(--parchment) 0%, var(--cream) 100%);
+    color: #111;
+    background: #f4f2e8;
     overflow-x: hidden;
 }
 
