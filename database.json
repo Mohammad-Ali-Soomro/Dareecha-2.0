@@ -21,6 +21,17 @@
       "ownerId": 1754509631315,
       "isAvailable": true,
       "createdAt": "2025-08-06T19:47:27.180Z"
+    },
+    {
+      "id": 1754678647738,
+      "title": "dasd",
+      "author": "asds",
+      "description": "dsadsad",
+      "category": "dsad",
+      "condition": "excellent",
+      "ownerId": 1754509631315,
+      "isAvailable": true,
+      "createdAt": "2025-08-08T18:44:07.738Z"
     }
   ],
   "borrowRequests": [],
