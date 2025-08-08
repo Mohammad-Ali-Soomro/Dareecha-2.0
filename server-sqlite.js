@@ -1,10 +1,11 @@
+
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const cors = require('cors');
 const session = require('express-session');
 let SQLiteStoreFactory;
-try { SQLiteStoreFactory = require('connect-sqlite3')(session); } catch (e) { console.warn('connect-sqlite3 not found, using MemoryStore for sessions'); SQLiteStoreFactory = null; }
+try { SQLiteStoreFactory = require('connect-sqlite3')(session); } catch (e) { console.warn('connect-sqlite3 not found, using MemoryStore for sessions'); }
 const passport = require('passport');
 const MicrosoftStrategy = require('passport-microsoft').Strategy;
 const path = require('path');

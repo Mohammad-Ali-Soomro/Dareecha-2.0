@@ -1,39 +1,9 @@
 {
   "users": [
-    {
-      "id": 1754509631315,
-      "email": "demo@giki.edu.pk",
-      "name": "demo",
-      "password": "$2a$10$JovWEHtDgK4Mv5T6AbG6LuNFiWfV4rIHewxRJdBC9vT129nh0j522",
-      "registrationNumber": "DEMO-1754509631315",
-      "department": "Computer Science",
-      "createdAt": "2025-08-06T19:47:11.315Z"
-    }
+    { "id": 1, "email": "demo@giki.edu.pk", "name": "Demo User", "provider": "demo", "created_at": "2025-08-09T00:00:00.000Z", "last_login": "2025-08-09T00:00:00.000Z", "is_active": 1 }
   ],
-  "books": [
-    {
-      "id": 1754509647180,
-      "title": "Maybe in another life.",
-      "author": " Bertrand Russell",
-      "description": "dnaskjdnksadsahd",
-      "category": "General",
-      "condition": "Good",
-      "ownerId": 1754509631315,
-      "isAvailable": true,
-      "createdAt": "2025-08-06T19:47:27.180Z"
-    },
-    {
-      "id": 1754678647738,
-      "title": "dasd",
-      "author": "asds",
-      "description": "dsadsad",
-      "category": "dsad",
-      "condition": "excellent",
-      "ownerId": 1754509631315,
-      "isAvailable": true,
-      "createdAt": "2025-08-08T18:44:07.738Z"
-    }
-  ],
-  "borrowRequests": [],
-  "notifications": []
+  "books": [],
+  "borrow_requests": [],
+  "notifications": [],
+  "seq": { "user": 2, "book": 1, "request": 1, "notification": 1 }
 }

@@ -135,14 +135,17 @@ async function respondToRequest(requestId, response, notificationEl) {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ response, responder: currentUser.username })
+            body: JSON.stringify({ response, responder: currentUser?.username || currentUser?.name || currentUser?.email })
         });
 
         const data = await res.json();
-        if (data.success) {
-            notificationEl.remove();
-            const message = response === 'approved' ? 'Request approved!' : 'Request denied.';
-            alert(message);
+        if (res.ok && data.success !== false) {
+            if (notificationEl && notificationEl.remove) notificationEl.remove();
+            alert(response === 'approved' ? 'Request approved!' : 'Request denied.');
+            // Refresh pending list if panel is open
+            if (document.getElementById('approvalPanel')?.classList.contains('open')) {
+                loadPendingRequests(true);
+            }
         } else {
             alert(data.error || 'Failed to respond to request');
         }
@@ -313,17 +316,14 @@ async function login() {
         });
 
         const data = await response.json();
-        if (response.ok && data.token) {
+        // Treat session-based login as success even if token is null
+        if (response.ok && data.user) {
             currentUser = data.user;
-            localStorage.setItem('currentUser', JSON.stringify(data.user));
-            localStorage.setItem('authToken', data.token);
-
-            // Initialize socket connection after login
+            if (!currentUser.username) currentUser.username = currentUser.name || currentUser.email;
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            // No JWT token is required when using sessions
             initializeSocket();
-
-            // Load books from server
             await loadBooks();
-
             updateNavigation();
             showPage('feed');
         } else {
@@ -335,6 +335,8 @@ async function login() {
         if (user) {
             currentUser = user;
             localStorage.setItem('currentUser', JSON.stringify(user));
+            initializeSocket();
+            await loadBooks();
             updateNavigation();
             showPage('feed');
         } else {
@@ -356,10 +358,7 @@ async function addBook() {
     }
 
     try {
-        const token = localStorage.getItem('authToken');
         const headers = { 'Content-Type': 'application/json' };
-        if (token) headers['Authorization'] = `Bearer ${token}`; // optional, server uses session
-
         const response = await fetch('/api/books', {
             method: 'POST',
             headers,
@@ -384,6 +383,13 @@ async function addBook() {
     }
 }
 
+function clearBookForm() {
+    const fields = ['bookTitle','bookAuthor','bookGenre','bookDescription'];
+    fields.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    const cond = document.getElementById('bookCondition');
+    if (cond) cond.value = 'Good';
+}
+
 async function loadBooks() {
     try {
         const response = await fetch('/api/books');
@@ -404,7 +410,7 @@ function renderBooks() {
 
 function createBookCard(book) {
     const isBorrowed = book.borrowedBy !== null;
-    const isOwner = book.owner === currentUser?.username;
+    const isOwner = book.owner === (currentUser?.username);
     let actionButton = '';
     let dueInfo = '';
 
@@ -570,7 +576,7 @@ async function submitBorrowRequest() {
         });
 
         const data = await response.json();
-        if (data.success) {
+        if (response.ok && (data.success || data.message)) {
             closeBorrowModal();
             alert('Borrow request sent! The owner will be notified and can approve or deny your request.');
         } else {
@@ -594,7 +600,7 @@ async function returnBook(bookId) {
         });
 
         const data = await response.json();
-        if (data.success) {
+        if (response.ok && (data.success || data.message)) {
             // Book will be updated via Socket.IO
         } else {
             alert(data.error || 'Failed to return book');
@@ -623,7 +629,7 @@ async function deleteBook(bookId) {
         });
 
         const data = await response.json();
-        if (data.success) {
+        if (response.ok && (data.success || data.message)) {
             // Book will be removed via Socket.IO
         } else {
             alert(data.error || 'Failed to delete book');
@@ -663,8 +669,7 @@ function renderProfile(username) {
 
     header.innerHTML = `
         <h2>${username}</h2>
-        <p>${userBooks.length} Books Added to Library</p>
-    `;
+        <p>${userBooks.length} Books Added to Library</p>`;
 
     document.getElementById('booksAdded').textContent = userBooks.length;
     document.getElementById('booksBorrowed').textContent = borrowedCount;
@@ -716,42 +721,70 @@ function logout() {
     });
 }
 
+async function loadPendingRequests(keepOpen = false) {
+    try {
+        const panel = document.getElementById('approvalPanel');
+        if (!keepOpen) {
+            panel.style.display = 'block';
+            panel.classList.add('open');
+        }
+        const res = await fetch(`/api/borrow-requests/${currentUser.id}`);
+        if (!res.ok) throw new Error('Failed to load requests');
+        const requests = await res.json();
+        if (!Array.isArray(requests)) return;
+
+        panel.innerHTML = `
+          <div class="approval-header">
+            <h3>Pending Borrow Requests</h3>
+            <button class="close-panel" onclick="document.getElementById('approvalPanel').classList.remove('open');document.getElementById('approvalPanel').style.display='none'">×</button>
+          </div>
+          <div class="approval-requests">
+            ${requests.length === 0 ? '<div style="padding:12px">No pending requests.</div>' : requests.map(r => `
+              <div class="approval-request">
+                <h4>Request #${r.id}</h4>
+                <div class="request-info">Book ID: ${r.book_id} • Days: ${r.borrow_period_days}</div>
+                ${r.message ? `<div class="request-message">${r.message}</div>` : ''}
+                <div class="approval-actions">
+                  <button class="approve-btn" onclick="respondToRequest('${r.id}', 'approved')">Approve</button>
+                  <button class="deny-btn" onclick="respondToRequest('${r.id}', 'denied')">Deny</button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+    } catch (e) {
+        alert('Failed to load approval requests');
+    }
+}
+
 // Initialize
 function init() {
-    // Prefer server session via OAuth
+    // Strictly rely on server session; do not auto-login from localStorage
     fetch('/api/me')
         .then(r => r.ok ? r.json() : null)
-        .then(me => {
+        .then(async me => {
             if (me && me.email) {
                 currentUser = me;
-                // Normalize for existing code paths
                 if (!currentUser.username) currentUser.username = currentUser.name || currentUser.email;
                 localStorage.setItem('currentUser', JSON.stringify(currentUser));
                 initializeSocket();
+                await loadBooks();
                 updateNavigation();
                 showPage('feed');
                 return;
             }
-            // Fallback to previous local storage behavior (dev/offline)
-            const savedUser = localStorage.getItem('currentUser');
-            if (savedUser) {
-                currentUser = JSON.parse(savedUser);
-                initializeSocket();
-                updateNavigation();
-                showPage('feed');
-            } else {
-                // If not authenticated, send user to landing page for OAuth
+            // Not authenticated: clear any stale local state and go to landing
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('authToken');
+            if (window.location.pathname !== '/') {
                 window.location.href = '/';
             }
         })
         .catch(() => {
-            const savedUser = localStorage.getItem('currentUser');
-            if (savedUser) {
-                currentUser = JSON.parse(savedUser);
-                initializeSocket();
-                updateNavigation();
-                showPage('feed');
-            } else {
+            // On network error, do not assume login; send to landing
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('authToken');
+            if (window.location.pathname !== '/') {
                 window.location.href = '/';
             }
         });
